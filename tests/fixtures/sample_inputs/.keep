@@ -1,0 +1,3 @@
+Drop sample PDF / images / archives here.
+`scripts/run_local_pipeline.sh` generates a synthetic A4 drawing into this
+directory if no fixtures are present.

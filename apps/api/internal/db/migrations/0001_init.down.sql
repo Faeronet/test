@@ -1,0 +1,16 @@
+DROP TABLE IF EXISTS model_versions;
+DROP TABLE IF EXISTS exports;
+DROP TABLE IF EXISTS review_edits;
+DROP TABLE IF EXISTS review_sessions;
+DROP TABLE IF EXISTS qa_metrics;
+DROP TABLE IF EXISTS cad_constraints;
+DROP TABLE IF EXISTS cad_primitives;
+DROP TABLE IF EXISTS ocr_blocks;
+DROP TABLE IF EXISTS page_classifications;
+DROP TABLE IF EXISTS job_events;
+DROP TABLE IF EXISTS jobs;
+DROP TABLE IF EXISTS artifacts;
+DROP TABLE IF EXISTS pages;
+DROP TABLE IF EXISTS files;
+DROP TABLE IF EXISTS batches;
+DROP TABLE IF EXISTS users;

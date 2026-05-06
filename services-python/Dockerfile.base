@@ -1,0 +1,31 @@
+# Shared base for every drawing2dxf python service.
+#
+# Built from the `services-python/` directory so the build context contains
+# both `common/` and the per-service folder.
+FROM python:3.11-slim AS base
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    PIP_NO_CACHE_DIR=1
+
+# OS-level deps that almost every CV service needs. ML model frameworks are
+# installed per-service (so we don't pay the YOLO/Paddle download cost when
+# they're not used).
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        build-essential \
+        libgl1 \
+        libglib2.0-0 \
+        libsm6 \
+        libxext6 \
+        libxrender1 \
+        libgomp1 \
+        ca-certificates \
+        curl \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Install the shared package first so its layer can be cached.
+COPY common /app/common
+RUN pip install /app/common

@@ -1,0 +1,30 @@
+version: "3.9"
+
+# GPU overrides for ML services. Use:
+#   docker compose -f docker-compose.yml -f docker-compose.gpu.yml up -d
+# or `make up-gpu`.
+#
+# Requires NVIDIA Container Toolkit installed on host.
+
+x-gpu-deploy: &gpu-deploy
+  deploy:
+    resources:
+      reservations:
+        devices:
+          - driver: nvidia
+            count: all
+            capabilities: [gpu]
+
+services:
+  ocr-service:
+    <<: *gpu-deploy
+    environment:
+      ENABLE_GPU: "true"
+
+  geometry-service:
+    environment:
+      ENABLE_GPU: "true"
+
+  qa-service:
+    environment:
+      ENABLE_GPU: "true"

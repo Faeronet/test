@@ -1,0 +1,63 @@
+# Kafka / Redpanda topic catalogue. Each worker reads `consumes` and produces
+# `produces`. All events follow the common envelope:
+#
+#   {
+#     "event_id":     "uuid",
+#     "event_type":   "page.preprocessed",
+#     "batch_id":     "uuid",
+#     "file_id":      "uuid",
+#     "page_id":      "uuid",
+#     "artifact_uri": "s3://...",
+#     "attempt":      1,
+#     "created_at":   "RFC3339",
+#     "payload":      { ... }
+#   }
+
+defaults:
+  partitions: 3
+  replication_factor: 1
+  retention_ms: 604800000      # 7 days
+  cleanup_policy: delete
+
+topics:
+  - name: file.uploaded
+    description: "Raw file uploaded by user, ready for ingest."
+  - name: archive.extracted
+    description: "Single child file extracted from an archive."
+  - name: page.extracted
+    description: "Page raster ready for preprocessing."
+  - name: page.preprocessed
+    description: "Page normalized + binarized + deskewed."
+  - name: page.ocr.requested
+    description: "Request OCR for a drawing page."
+  - name: page.ocr.done
+    description: "OCR blocks produced and stored."
+  - name: page.geometry.requested
+    description: "Request geometry restoration."
+  - name: page.geometry.done
+    description: "CAD JSON produced."
+  - name: page.qa.requested
+    description: "Request QA over CAD JSON."
+  - name: page.qa.done
+    description: "QA metrics produced."
+  - name: page.review.required
+    description: "Page flagged for human review."
+  - name: page.review.accepted
+    description: "Reviewer accepted the page."
+  - name: page.export.requested
+    description: "Export DXF for a page."
+  - name: page.export.done
+    description: "DXF produced and stored."
+  - name: page.failed
+    description: "Page failed at any stage."
+  - name: deadletter
+    description: "Events that exceeded retry budget."
+
+consumer_groups:
+  ingest_worker:        ["file.uploaded", "archive.extracted"]
+  preprocess_service:   ["page.extracted"]
+  ocr_service:          ["page.ocr.requested"]
+  geometry_service:     ["page.geometry.requested"]
+  qa_service:           ["page.qa.requested"]
+  dxf_export_service:   ["page.export.requested"]
+  api_progress:         ["*"]   # API consumes everything for SSE fan-out

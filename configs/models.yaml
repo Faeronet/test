@@ -1,0 +1,67 @@
+# Configuration of all ML / inference backends. Weights are NOT downloaded
+# automatically. If a `weights` path does not exist, the corresponding service
+# falls back to its mock / classical implementation.
+
+router:
+  implementation_env: ROUTER_IMPL          # rules | yolo
+  default_implementation: rules
+  yolo11s_cls:
+    weights_env: MODEL_ROUTER_WEIGHTS
+    classes:
+      - detail_drawing
+      - assembly_drawing
+      - specification_sheet
+      - bad_scan
+      - unknown
+    image_size: 640
+    confidence_threshold: 0.35
+    device_env: ENABLE_GPU
+
+segmentation:
+  implementation_env: SEG_IMPL             # classical | yolo
+  default_implementation: classical
+  yolo11m_seg:
+    weights_env: SEGMENTATION_WEIGHTS
+    classes:
+      - visible_geometry      # 0
+      - hidden_geometry       # 1
+      - centerline            # 2
+      - dimension_graphics    # 3
+      - text                  # 4
+      - hatch                 # 5
+      - break_symbol          # 6
+      - frame_titleblock      # 7
+      - stamp_signature       # 8
+      - noise                 # 9
+    image_size: 1280
+    tile_size: 1024
+    tile_overlap: 128
+    confidence_threshold: 0.25
+    device_env: ENABLE_GPU
+
+ocr:
+  implementation_env: OCR_IMPL             # mock | paddle
+  default_implementation: mock
+  paddleocr_pp_ocrv5:
+    weights_dir_env: OCR_WEIGHTS_DIR
+    languages:
+      - ru
+      - en
+    use_angle_cls: true
+    rec_batch_num: 8
+    device_env: ENABLE_GPU
+
+vlm_review:
+  implementation_env: VLM_IMPL             # mock | qwen
+  default_implementation: mock
+  qwen25_vl:
+    weights_dir_env: VLM_WEIGHTS_DIR
+    max_new_tokens: 512
+    role: "review_helper"   # never source of CAD truth
+
+sam_assist:
+  implementation_env: SAM_IMPL             # mock | sam21
+  default_implementation: mock
+  sam_2_1:
+    weights_env: SAM_WEIGHTS
+    role: "interactive_mask_assistant"  # not automatic CAD generator

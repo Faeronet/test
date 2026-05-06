@@ -1,0 +1,67 @@
+flowchart LR
+  user["User Web Panel<br/>(React + Vite)"]
+  api["Go API<br/>(chi, pgx, MinIO, kafka)"]
+  pg[(PostgreSQL)]
+  s3[("MinIO S3")]
+  rp[(Redpanda / Kafka)]
+
+  ingest["ingest-worker (Go)<br/>archive / PDF / image"]
+  pre["preprocess-service<br/>(Python)"]
+  router["model-router-service<br/>(rules now,<br/>YOLO11s-cls iface)"]
+  spec["page.discarded_specification<br/>(skipped artifact)"]
+  seg["segmentation-service<br/>(classical now,<br/>YOLO11m-seg iface)"]
+  ocr["ocr-service<br/>(mock + dimension parser,<br/>PaddleOCR PP-OCRv5 iface)"]
+  geom["geometry-service<br/>skeleton → graph →<br/>RANSAC LINE/ARC/CIRCLE →<br/>CAD JSON"]
+  qa["qa-service<br/>raster IoU / chamfer /<br/>hausdorff / heatmap"]
+  review["human review<br/>(web overlay)"]
+  dxf["dxf-export-service<br/>(ezdxf, R2010/R2000)"]
+  pkg["export-packager (Go)<br/>ZIP per batch"]
+  download["Result download"]
+
+  user -->|upload| api
+  api --> pg
+  api --> s3
+  api --> rp
+
+  rp --> ingest
+  ingest --> s3
+  ingest --> pg
+  ingest --> rp
+
+  rp --> pre
+  pre --> s3
+  pre --> rp
+
+  rp --> router
+  router -->|specification| spec
+  router -->|drawing| rp
+
+  rp --> seg
+  seg --> s3
+  seg --> rp
+
+  rp --> ocr
+  ocr --> s3
+  ocr --> rp
+
+  rp --> geom
+  geom --> s3
+  geom --> rp
+
+  rp --> qa
+  qa --> s3
+  qa --> rp
+
+  rp -->|review.required| review
+  review -->|accept / reprocess| rp
+
+  rp --> dxf
+  dxf --> s3
+  dxf --> pg
+
+  rp --> pkg
+  pkg --> s3
+  pkg --> pg
+
+  pkg --> download
+  user --- download

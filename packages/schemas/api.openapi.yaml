@@ -1,0 +1,337 @@
+openapi: 3.0.3
+info:
+  title: drawing2dxf API
+  version: "0.1.0"
+  description: |
+    REST + SSE API for the drawing2dxf local pipeline. Authentication is left as
+    a TODO; this is a local engineering tool. All artifact bytes live in MinIO,
+    PostgreSQL stores only metadata + URIs.
+
+servers:
+  - url: http://localhost:8080
+    description: Local
+
+tags:
+  - name: batches
+  - name: pages
+  - name: artifacts
+  - name: review
+  - name: exports
+  - name: events
+  - name: health
+
+paths:
+  /healthz:
+    get:
+      tags: [health]
+      summary: Liveness probe
+      responses:
+        '200':
+          description: ok
+
+  /api/batches:
+    post:
+      tags: [batches]
+      summary: Create a new batch
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/BatchCreate' }
+      responses:
+        '201':
+          description: created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Batch' }
+    get:
+      tags: [batches]
+      summary: List batches
+      parameters:
+        - in: query
+          name: limit
+          schema: { type: integer, default: 50 }
+        - in: query
+          name: offset
+          schema: { type: integer, default: 0 }
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Batch' }
+
+  /api/batches/{batchId}:
+    get:
+      tags: [batches]
+      parameters:
+        - { in: path, name: batchId, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/BatchDetail' }
+
+  /api/batches/{batchId}/upload:
+    post:
+      tags: [batches]
+      summary: Upload one or more files into a batch
+      parameters:
+        - { in: path, name: batchId, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                files:
+                  type: array
+                  items: { type: string, format: binary }
+      responses:
+        '202':
+          description: accepted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  files:
+                    type: array
+                    items: { $ref: '#/components/schemas/File' }
+
+  /api/batches/{batchId}/export:
+    post:
+      tags: [exports]
+      parameters:
+        - { in: path, name: batchId, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                format: { type: string, enum: [dxf, zip], default: zip }
+                dxf_version: { type: string, enum: [R2010, R2000], default: R2010 }
+      responses:
+        '202':
+          description: export queued
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Export' }
+
+  /api/pages/{pageId}:
+    get:
+      tags: [pages]
+      parameters:
+        - { in: path, name: pageId, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Page' }
+
+  /api/pages/{pageId}/artifacts:
+    get:
+      tags: [artifacts]
+      parameters:
+        - { in: path, name: pageId, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Artifact' }
+
+  /api/pages/{pageId}/cadjson:
+    get:
+      tags: [artifacts]
+      parameters:
+        - { in: path, name: pageId, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema:
+                description: Validated CAD JSON document.
+                type: object
+
+  /api/pages/{pageId}/qa:
+    get:
+      tags: [pages]
+      parameters:
+        - { in: path, name: pageId, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/QaMetrics' }
+
+  /api/pages/{pageId}/review/accept:
+    post:
+      tags: [review]
+      parameters:
+        - { in: path, name: pageId, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200': { description: ok }
+
+  /api/pages/{pageId}/review/edit:
+    post:
+      tags: [review]
+      parameters:
+        - { in: path, name: pageId, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                edits:
+                  type: array
+                  items: { type: object }
+                note: { type: string }
+      responses:
+        '200': { description: ok }
+
+  /api/pages/{pageId}/reprocess:
+    post:
+      tags: [review]
+      parameters:
+        - { in: path, name: pageId, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '202': { description: queued }
+
+  /api/exports/{exportId}:
+    get:
+      tags: [exports]
+      parameters:
+        - { in: path, name: exportId, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Export' }
+
+  /api/exports/{exportId}/download:
+    get:
+      tags: [exports]
+      parameters:
+        - { in: path, name: exportId, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '302':
+          description: presigned redirect to MinIO
+
+  /api/events/stream:
+    get:
+      tags: [events]
+      summary: Server-Sent Events stream of pipeline progress
+      parameters:
+        - { in: query, name: batch_id, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          description: text/event-stream
+          content:
+            text/event-stream:
+              schema: { type: string }
+
+components:
+  schemas:
+    BatchCreate:
+      type: object
+      properties:
+        name: { type: string }
+
+    Batch:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        status: { type: string }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+
+    BatchDetail:
+      allOf:
+        - $ref: '#/components/schemas/Batch'
+        - type: object
+          properties:
+            files:
+              type: array
+              items: { $ref: '#/components/schemas/File' }
+            pages:
+              type: array
+              items: { $ref: '#/components/schemas/Page' }
+
+    File:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        batch_id: { type: string, format: uuid }
+        original_name: { type: string }
+        mime_type: { type: string }
+        size_bytes: { type: integer }
+        storage_uri: { type: string }
+        status: { type: string }
+
+    Page:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        batch_id: { type: string, format: uuid }
+        file_id: { type: string, format: uuid }
+        page_index: { type: integer }
+        page_type: { type: string }
+        status: { type: string }
+        width_px: { type: integer }
+        height_px: { type: integer }
+        dpi: { type: integer }
+        raw_image_uri: { type: string }
+        normalized_image_uri: { type: string }
+        preview_uri: { type: string }
+        skip_reason: { type: string, nullable: true }
+        confidence: { type: number, nullable: true }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+
+    Artifact:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        batch_id: { type: string, format: uuid }
+        page_id: { type: string, format: uuid, nullable: true }
+        kind: { type: string }
+        uri: { type: string }
+        mime_type: { type: string }
+        metadata: { type: object }
+        created_at: { type: string, format: date-time }
+
+    QaMetrics:
+      type: object
+      properties:
+        chamfer_px: { type: number, nullable: true }
+        hausdorff_px: { type: number, nullable: true }
+        raster_iou: { type: number, nullable: true }
+        requires_review: { type: boolean }
+        warnings: { type: array, items: { type: string } }
+
+    Export:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        batch_id: { type: string, format: uuid }
+        page_id: { type: string, format: uuid, nullable: true }
+        format: { type: string }
+        uri: { type: string }
+        status: { type: string }
+        created_at: { type: string, format: date-time }

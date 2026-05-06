@@ -1,0 +1,36 @@
+# Editor
+.idea/
+.vscode/
+
+# OS
+.DS_Store
+
+# Env
+.env
+.env.local
+.env.*.local
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+*.egg
+.venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Node / Web
+node_modules/
+dist/
+.vite/
+*.log
+
+# Go
+bin/
+vendor/
+
+# Output
+tests/fixtures/sample_inputs/synthetic_drawing.png
+*.dxf
+*.svg.tmp

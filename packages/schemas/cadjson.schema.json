@@ -1,0 +1,168 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://drawing2dxf.local/schemas/cadjson.schema.json",
+  "title": "CAD JSON",
+  "description": "Intermediate CAD representation produced by geometry-service and consumed by dxf-export-service and qa-service.",
+  "type": "object",
+  "required": ["schema_version", "document", "layers", "primitives"],
+  "additionalProperties": false,
+
+  "properties": {
+    "schema_version": { "type": "string", "const": "0.1" },
+
+    "document": {
+      "type": "object",
+      "required": ["page_id", "units", "page_type"],
+      "additionalProperties": true,
+      "properties": {
+        "batch_id":   { "type": ["string", "null"] },
+        "file_id":    { "type": ["string", "null"] },
+        "page_id":    { "type": "string" },
+        "units":      { "type": "string", "enum": ["mm"] },
+        "dpi":        { "type": ["number", "null"] },
+        "px_per_mm":  { "type": ["number", "null"] },
+        "page_type":  { "type": "string", "enum": ["detail_drawing", "assembly_drawing", "specification_sheet", "bad_scan", "unknown"] },
+        "title":      { "type": ["string", "null"] }
+      }
+    },
+
+    "layers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "role"],
+        "additionalProperties": true,
+        "properties": {
+          "name":  { "type": "string" },
+          "role":  { "type": "string" },
+          "color": { "type": ["integer", "null"] }
+        }
+      }
+    },
+
+    "primitives": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/primitive" }
+    },
+
+    "ocr": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/ocr_block" },
+      "default": []
+    },
+
+    "dimensions": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/dimension" },
+      "default": []
+    },
+
+    "constraints": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/constraint" },
+      "default": []
+    },
+
+    "qa": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "requires_review": { "type": "boolean" },
+        "warnings":        { "type": "array", "items": { "type": "string" } },
+        "raster_iou":      { "type": ["number", "null"] },
+        "chamfer_px":      { "type": ["number", "null"] },
+        "hausdorff_px":    { "type": ["number", "null"] }
+      }
+    }
+  },
+
+  "$defs": {
+    "point2d": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 2,
+      "items": { "type": "number" }
+    },
+
+    "primitive": {
+      "type": "object",
+      "required": ["id", "type", "layer"],
+      "additionalProperties": true,
+      "properties": {
+        "id":         { "type": "string" },
+        "type":       { "type": "string", "enum": ["LINE", "ARC", "CIRCLE", "LWPOLYLINE", "TEXT"] },
+        "layer":      { "type": "string" },
+        "confidence": { "type": ["number", "null"] },
+        "fit": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "method":    { "type": "string" },
+            "rms_px":    { "type": ["number", "null"] },
+            "inliers":   { "type": ["integer", "null"] }
+          }
+        },
+        "source_pixels": { "type": ["integer", "null"] },
+        "warnings":      { "type": "array", "items": { "type": "string" } },
+
+        "p1":     { "$ref": "#/$defs/point2d" },
+        "p2":     { "$ref": "#/$defs/point2d" },
+        "center": { "$ref": "#/$defs/point2d" },
+        "radius": { "type": ["number", "null"] },
+        "start_angle_deg": { "type": ["number", "null"] },
+        "end_angle_deg":   { "type": ["number", "null"] },
+
+        "vertices": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/point2d" }
+        },
+        "closed": { "type": ["boolean", "null"] },
+
+        "text":     { "type": ["string", "null"] },
+        "position": { "$ref": "#/$defs/point2d" },
+        "height":   { "type": ["number", "null"] },
+        "rotation_deg": { "type": ["number", "null"] }
+      }
+    },
+
+    "ocr_block": {
+      "type": "object",
+      "required": ["id", "text", "bbox_px"],
+      "additionalProperties": true,
+      "properties": {
+        "id":        { "type": "string" },
+        "text":      { "type": "string" },
+        "bbox_px":   { "type": "array", "minItems": 4, "maxItems": 4, "items": { "type": "number" } },
+        "rotation_deg": { "type": ["number", "null"] },
+        "confidence":   { "type": ["number", "null"] },
+        "kind":         { "type": "string", "enum": ["dimension_text", "technical_text", "titleblock_text", "unknown"] },
+        "parsed":       { "type": ["object", "null"] }
+      }
+    },
+
+    "dimension": {
+      "type": "object",
+      "required": ["id", "kind"],
+      "additionalProperties": true,
+      "properties": {
+        "id":     { "type": "string" },
+        "kind":   { "type": "string", "enum": ["linear", "diameter", "radius", "thread", "chamfer", "tolerance", "unknown"] },
+        "value":  { "type": ["number", "null"] },
+        "unit":   { "type": ["string", "null"] },
+        "tolerance": { "type": ["string", "null"] },
+        "anchor_px": { "$ref": "#/$defs/point2d" },
+        "raw_text":  { "type": ["string", "null"] }
+      }
+    },
+
+    "constraint": {
+      "type": "object",
+      "required": ["kind", "primitives"],
+      "additionalProperties": true,
+      "properties": {
+        "kind":       { "type": "string", "enum": ["coincident", "horizontal", "vertical", "parallel", "perpendicular", "tangent", "concentric", "equal", "collinear"] },
+        "primitives": { "type": "array", "items": { "type": "string" } }
+      }
+    }
+  }
+}

@@ -1,0 +1,12 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "drawing2dxf-sam-assist"
+version = "0.1.0"
+requires-python = ">=3.10"
+dependencies = ["drawing2dxf-common"]
+
+[tool.setuptools.packages.find]
+include = ["app*"]

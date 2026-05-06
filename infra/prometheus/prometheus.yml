@@ -1,0 +1,21 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: drawing2dxf-api
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["api:8080"]
+
+  - job_name: drawing2dxf-services
+    metrics_path: /metrics
+    static_configs:
+      - targets:
+          - "preprocess-service:8000"
+          - "model-router-service:8000"
+          - "segmentation-service:8000"
+          - "ocr-service:8000"
+          - "geometry-service:8000"
+          - "qa-service:8000"
+          - "dxf-export-service:8000"

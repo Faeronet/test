@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "drawing2dxf-ocr"
+version = "0.1.0"
+requires-python = ">=3.10"
+dependencies = [
+  "drawing2dxf-common",
+  "opencv-python-headless>=4.10,<5",
+  "numpy>=1.26,<3",
+]
+
+[project.optional-dependencies]
+test = ["pytest>=8.0"]
+
+[tool.setuptools.packages.find]
+include = ["app*"]

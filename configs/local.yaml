@@ -1,0 +1,124 @@
+# Common runtime configuration for all services.
+# Values may be overridden via environment variables (see .env.example).
+
+app:
+  name: drawing2dxf
+  env: local
+  log_level: info
+
+api:
+  http_addr: ":8080"
+  public_base_url: "http://localhost:8080"
+  cors_allowed_origins:
+    - "http://localhost:5173"
+    - "http://localhost:4173"
+  request_timeout_seconds: 60
+  upload_max_bytes: 2147483648  # 2 GiB
+
+postgres:
+  dsn_env: POSTGRES_DSN
+  max_open_conns: 20
+  max_idle_conns: 5
+  conn_max_lifetime_seconds: 1800
+
+minio:
+  endpoint_env: MINIO_ENDPOINT
+  access_key_env: MINIO_ACCESS_KEY
+  secret_key_env: MINIO_SECRET_KEY
+  bucket_env: MINIO_BUCKET
+  use_ssl_env: MINIO_USE_SSL
+  region_env: MINIO_REGION
+
+kafka:
+  brokers_env: KAFKA_BROKERS
+  client_id_env: KAFKA_CLIENT_ID
+  consumer_group_env: KAFKA_CONSUMER_GROUP
+  retry:
+    max_attempts: 5
+    initial_backoff_ms: 500
+    max_backoff_ms: 30000
+  deadletter_topic: "deadletter"
+
+ingest:
+  max_archive_files: 10000
+  max_archive_depth: 8
+  max_archive_uncompressed_bytes: 21474836480  # 20 GiB
+  max_page_pixels: 200000000
+  pdf_render_dpi: 300
+  external_tools:
+    seven_zip_bin: "7zz"
+    unar_bin: "unar"
+    poppler_pdftoppm_bin: "pdftoppm"
+    poppler_pdfimages_bin: "pdfimages"
+
+preprocess:
+  target_dpi: 300
+  deskew_enabled: true
+  deskew_max_angle_deg: 10.0
+  binarize_method: "adaptive"
+  denoise_strength: 7
+  preview_max_side_px: 1600
+
+router:
+  default_implementation: "rules"  # rules | yolo
+  rules:
+    text_density_specification_threshold: 0.45
+    table_grid_min_cells: 18
+    bad_scan_min_quality: 0.25
+
+segmentation:
+  default_implementation: "classical"  # classical | yolo
+  classes:
+    - visible_geometry
+    - hidden_geometry
+    - centerline
+    - dimension_graphics
+    - text
+    - hatch
+    - break_symbol
+    - frame_titleblock
+    - stamp_signature
+    - noise
+
+ocr:
+  default_implementation: "mock"  # mock | paddle
+  dimension_parser_locale: "ru,en"
+
+geometry:
+  ransac:
+    line_residual_px: 1.5
+    line_min_inliers: 25
+    circle_residual_px: 2.0
+    circle_min_inliers: 40
+  snapping:
+    angle_tolerance_deg: 1.5
+    endpoint_tolerance_px: 4.0
+    snap_to_axis_deg: [0, 45, 90, 135]
+  merge:
+    collinear_distance_px: 2.5
+    collinear_gap_px: 12.0
+
+qa:
+  raster_iou_warn_below: 0.85
+  chamfer_warn_above_px: 6.0
+  hausdorff_warn_above_px: 12.0
+  low_confidence_warn_count: 5
+
+dxf:
+  default_version: "R2010"
+  fallback_version: "R2000"
+  units: "mm"
+  layers:
+    - {name: "00_FRAME",              color: 8,  role: "frame"}
+    - {name: "01_TITLE_BLOCK",        color: 8,  role: "titleblock"}
+    - {name: "02_PART_VISIBLE",       color: 7,  role: "geometry"}
+    - {name: "03_PART_HIDDEN",        color: 5,  role: "hidden"}
+    - {name: "04_CENTER_AXIS",        color: 1,  role: "centerline"}
+    - {name: "05_DIM_LINES",          color: 3,  role: "dimension"}
+    - {name: "06_DIM_TEXT",           color: 3,  role: "dimension_text"}
+    - {name: "07_TEXT_NOTES",         color: 7,  role: "text"}
+    - {name: "08_HATCH",              color: 2,  role: "hatch"}
+    - {name: "09_BREAK_SYMBOLS",      color: 4,  role: "break_symbol"}
+    - {name: "10_TABLES_ON_DRAWING",  color: 8,  role: "tables"}
+    - {name: "90_QA_LOW_CONFIDENCE",  color: 6,  role: "qa"}
+    - {name: "99_RASTER_REFERENCE",   color: 9,  role: "raster"}

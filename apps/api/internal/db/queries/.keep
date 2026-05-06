@@ -1,0 +1,1 @@
+Reserved for sqlc-generated query helpers if we move off bare pgx later.
