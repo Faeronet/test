@@ -71,6 +71,25 @@ make run-sample
 Открыть [http://localhost:5173](http://localhost:5173) — web-панель.
 API доступен на `http://localhost:8080`.
 
+### Доступ из внешней сети
+
+В `.env` укажите внешний IP/домен хоста:
+
+```bash
+API_PORT=8080
+WEB_PORT=5173
+API_PUBLIC_BASE_URL=http://<HOST_OR_IP>:8080
+WEB_API_BASE_URL=http://<HOST_OR_IP>:8080
+API_CORS_ALLOWED_ORIGINS=http://<HOST_OR_IP>:5173
+```
+
+После изменений перезапустите стек:
+
+```bash
+make down
+make up
+```
+
 ## Структура репозитория
 
 ```
