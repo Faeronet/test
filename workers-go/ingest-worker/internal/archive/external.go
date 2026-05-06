@@ -25,13 +25,18 @@ func Extract7z(ctx context.Context, src, dest string, lim security.Limits, count
 	return runArchiveTool(ctx, bin, []string{"x", "-y", "-bd", "-bb0", "-snl", "-snh", "-o" + dest, "--", src}, dest, lim, count, total)
 }
 
-// ExtractRAR delegates to `unar` which is safer than the proprietary unrar.
+// ExtractRAR prefers `unar`, but can fall back to `7zz`/`7z` in minimal
+// environments where unar is unavailable (e.g. alpine repositories).
 func ExtractRAR(ctx context.Context, src, dest string, lim security.Limits, count *int, total *int64) ([]ExtractedFile, error) {
-	bin := pickBinary("unar")
+	bin := pickBinary("unar", "7zz", "7z")
 	if bin == "" {
-		return nil, errors.New("unar binary not found in PATH")
+		return nil, errors.New("rar extractor not found in PATH (expected unar or 7zz/7z)")
 	}
-	return runArchiveTool(ctx, bin, []string{"-no-directory", "-no-quarantine", "-force-overwrite", "-o", dest, src}, dest, lim, count, total)
+	tool := filepath.Base(bin)
+	if strings.HasPrefix(tool, "unar") {
+		return runArchiveTool(ctx, bin, []string{"-no-directory", "-no-quarantine", "-force-overwrite", "-o", dest, src}, dest, lim, count, total)
+	}
+	return runArchiveTool(ctx, bin, []string{"x", "-y", "-bd", "-bb0", "-snl", "-snh", "-o" + dest, "--", src}, dest, lim, count, total)
 }
 
 func pickBinary(names ...string) string {

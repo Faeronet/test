@@ -15,7 +15,6 @@ RUN apk add --no-cache \
         ca-certificates \
         tzdata \
         p7zip \
-        unar \
         poppler-utils \
         && adduser -D -u 1000 app
 COPY --from=build /out/ingest-worker /usr/local/bin/ingest-worker
